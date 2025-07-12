@@ -1,14 +1,20 @@
 #include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Instruction.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include "InstCount/InstCount.h"
+#include "header/InstCount.h"
 
 PreservedAnalyses InstCount::run(const Function &F, 
   FunctionAnalysisManager &FAM) {
-  dbgs() << "[InstCount] Pass Entry\n";
+
+  for (const BasicBlock &BB : F) {
+    dbgs() << "[InstCount] " << F.getName() << " [# of Instructions] "<< BB.size()<<"\n";
+  }
+  
   return PreservedAnalyses::all();
 }
 
