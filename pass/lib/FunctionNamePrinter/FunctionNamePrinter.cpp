@@ -3,12 +3,13 @@
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/Debug.h"
 
-#include "FunctionNamePrinter/FunctionNamePrinter.h"
+#include "header/FunctionNamePrinter.h"
 
 PreservedAnalyses FunctionNamePrinter::run(const Function &F, 
   FunctionAnalysisManager &FAM) {
-  dbgs() << "[FunctionNamePrinter] Pass Entry\n";
+  dbgs() << "[FunctionNamePrinter] " << F.getName() << "\n";
   return PreservedAnalyses::all();
 }
 
