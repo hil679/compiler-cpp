@@ -1,14 +1,24 @@
 #include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Instruction.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include "CallCount/CallCount.h"
+#include "header/CallCount.h"
 
 PreservedAnalyses CallCount::run(const Function &F, 
   FunctionAnalysisManager &FAM) {
-  dbgs() << "[CallCount] Pass Entry\n";
+  for (const BasicBlock& BB : F) {
+    int callInstCnt = 0;
+    for (const Instruction& I : BB) {
+        if (isa<CallInst>(I)) {
+          callInstCnt++;
+        }
+    }
+    dbgs() << "[CallCount] \n" << F.getName() << " [# of Call Instructions] " << callInstCnt << "\n";
+  }
   return PreservedAnalyses::all();
 }
 
