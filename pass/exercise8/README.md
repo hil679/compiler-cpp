@@ -151,6 +151,12 @@
     ```clang++ ../../exercise8/test.opt.bc -o test.exe -L. -lcountCall --sysroot=`xcrun --show-sdk-path` -stdlib=libc++```
     - linux <br>
     ``` clang++ ../../test.opt.bc -o test.exe -lcountCall -L .```
+### option
+- linking runtime lib
+  |옵션|설명|
+  |--|--|
+  |-L경로|-L은 대문자 L이며, 링커에게 라이브러리 파일을 찾을 디렉터리 경로를 알려주는 역할|
+  |-l연결할 라이브러리|연결할 라이브러리 파일의 이름을 지정<br>-lcountCall는 libcountCall.so(공유 라이브러리) 또는 libcountCall.a(정적 라이브러리) 파일을 찾아 연결.<br> 링커가 자동으로 lib 접두사와 .so 또는 .a 확장자를 붙여줌|
   
 ## results
 <img src="image-1.png" width=700 height=50>
