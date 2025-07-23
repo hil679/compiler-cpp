@@ -188,7 +188,8 @@ opt -load-pass-plugin /path/to/MyPass.so -passes=hello-module input.bc -o output
 3) Compile and test the pass <br>
     a. compile <br>
         ```clang++ -c -fpic -fno-rtti -stdlib=libc++ `llvm-config --cppflags` FunctionNamePrinter.cpp -o FunctionNamePrinter.o --sysroot=`xcrun --show-sdk-path``` <br>
-   
+        <br>
+
     b. Make a shared library with the LLVM passes <br>
     
             ~~~
@@ -207,6 +208,25 @@ opt -load-pass-plugin /path/to/MyPass.so -passes=hello-module input.bc -o output
                 [FunctionNamePrinter] add
                 [FunctionNamePrinter] main
             ~~~
+### option
+| 옵션 | 설명 | 
+| :--- | :--- | 
+| **`-fpic`** | **PIC (Position-Independent Code) 생성**<br>코드를 메모리의 어떤 위치에 로드해도 실행될 수 있게 만드는 옵션임. 주로 동적 라이브러리(`.so`, `.dll`) 빌드 시 필수 사항. |
+| **`-fno-rtti`** | **RTTI (Run-Time Type Information) 비활성화**<br>런타임 시 객체 타입 정보를 사용하지 않도록 함. 코드 크기를 줄일 수 있으나, `dynamic_cast`나 `typeid` 사용 불가. |
+| **`-stdlib=libc++`** | **표준 라이브러리 지정**<br>C++ 표준 라이브러리로 Clang의 자체 구현체인 **`libc++`**를 사용함. GCC의 `libstdc++`와는 다른 라이브러리. |
+| **``llvm-config --cppflags```** | **LLVM 컴파일 플래그 가져오기**<br>명령어를 실행하여 LLVM 헤더 파일 경로 등 필요한 컴파일 플래그를 자동으로 추가해주는 기능. 편리한 빌드를 위한 지원. |
+
+- `clang++` shared lib option 
+    | 옵션 | 설명 |
+    | :--- | :--- |
+    | **`$(llvm-config --ldflags --libs)`** | **LLVM 링크 옵션 가져오기**<br>LLVM 라이브러리와 프로그램을 링크하는 데 필요한 모든 플래그를 자동으로 가져오는 명령어임. `--ldflags`는 링크 시 필요한 경로를, `--libs`는 실제 링크할 라이브러리 목록을 출력함. |
+    | **`-lc++`, `-lc++abi`, `-lunwind`** | **표준 라이브러리 및 런타임 링크**<br><ul><li>**`-lc++`**: Clang의 C++ 표준 라이브러리인 `libc++`를 링크함.</li><li>**`-lc++abi`**: `libc++`에 필요한 ABI(Application Binary Interface) 라이브러리를 링크함.</li><li>**`-lunwind`**: 스택 언와인딩(Stack Unwinding)을 처리하는 라이브러리를 링크함. 예외 처리 등에서 사용됨.</li></ul>|
+
+- `opt` option 
+    | 옵션 | 설명 |
+    | :--- | :--- |
+    | **`--load-pass-plugin`** | **사용자 정의 패스 플러그인 로드**<br>`opt` 툴 실행 시, 직접 만든 패스가 포함된 동적 라이브러리(`.so` 파일)를 로드하는 옵션임. 이 옵션을 사용해 커스텀 패스를 LLVM 툴에 등록하고 실행할 수 있음. |
+
 ## results
 ``` llvm-dis test.opt.bc ``` 
 - exercise3 와 exercise1의 C0는 다름, C0보다 최적화됨
