@@ -86,33 +86,31 @@ LoopInfo는 직접적으로 루프를 최적화하는 "변형(Transform) 패스"
     - The number of loops, the depth of a loop, …
 3) Compile and test the pass
  a. compile
-    - mac
-    ```clang++ -c -fpic -fno-rtti -stdlib=libc++ `llvm-config --cppflags` LoopInfoPrinter.cpp -o LoopInfoPrinter.o --sysroot=`xcrun --show-sdk-path` -std=c++17```
-    - linux
-    clang++ -c -fpic -fno-rtti LoopInfoPrinter.cpp -o LoopInfoPrinter.o -stdlib=libc++ `llvm-config --cppflags`
+    - mac <br>
+     ```clang++ -c -fpic -fno-rtti -stdlib=libc++ `llvm-config --cppflags` LoopInfoPrinter.cpp -o LoopInfoPrinter.o --sysroot=`xcrun --show-sdk-path` -std=c++17```
+
+    - linux <br>
+     ``` clang++ -c -fpic -fno-rtti LoopInfoPrinter.cpp -o LoopInfoPrinter.o -stdlib=libc++ `llvm-config --cppflags` ```
 
 
-    b.  Make a shared library with the LLVM passes
-        - mac
-        ~~~
-        clang++ -shared LoopInfoPrinter.o -o LoopInfoPrinter.so \
-            --sysroot=$(xcrun --show-sdk-path) \
-            $(llvm-config --ldflags --libs) \
-            -lc++abi -lunwind
-        ~~~
-        - linux
-        ~~~
-            clang++ -shared LoopInfoPrinter.o -o LoopInfoPrinter.so
-        ~~~
-    c. Run the LLVM Passes
+    b.  Make a shared library with the LLVM passes <br>
+    - mac <br>
+         ~~~
+         clang++ -shared LoopInfoPrinter.o -o LoopInfoPrinter.so \
+             --sysroot=$(xcrun --show-sdk-path) \
+             $(llvm-config --ldflags --libs) \
+             -lc++abi -lunwind
+         ~~~
+    - linux <br>
+         ~~~
+             clang++ -shared LoopInfoPrinter.o -o LoopInfoPrinter.so
+         ~~~
+   
+    c. Run the LLVM Passes <br>
         ```opt --load-pass-plugin LoopInfoPrinter.so --passes=loop-info-printer ../../exercise2/mm.bc -o ../../exercise6/mm.opt.bc```
-    - message result
+    
   
 ## results
-<h4 style="color: red;"> 
-    분석 필요
-</h4>
-
 ~~~
 opt --load-pass-plugin LoopInfoPrinter.so --passes=loop-info-printer mm.bc -o mm.opt.bc
 [Plugin] Registering LoopInfoPrinter Pass
