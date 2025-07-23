@@ -116,20 +116,21 @@ Function* addFun = Function::Create(
 ▪ int inc (int n) { return n + 1; }
 ▪ Create a basic block for the Inc function
 3) 4) Fill the Inc function with instructions Compile and test the pass
- a. compile
+ a. compile <br>
     ```clang++ -c -fpic -fno-rtti -stdlib=libc++ `llvm-config --cppflags`  InsertIncFunction.cpp -o  InsertIncFunction.o --sysroot=`xcrun --show-sdk-path` -std=c++17```
 
-    b.  Make a shared library with the LLVM passes
-        ~~~
+    b.  Make a shared library with the LLVM passes <br>
+    ~~~
         clang++ -shared LoopInfoPrinter.o -o LoopInfoPrinter.so \
-            --sysroot=$(xcrun --show-sdk-path) \
-            $(llvm-config --ldflags --libs) \
-            -lc++abi -lunwind
-        ~~~
-    c. Run the LLVM Passes
-    * --load로 mac에서는 동작 안 함, --passes도 있어야해
+        --sysroot=$(xcrun --show-sdk-path) \
+        $(llvm-config --ldflags --libs) \
+        -lc++abi -lunwind
+    ~~~
+   
+    c. Run the LLVM Passes <br>
+    * --load로 mac에서는 동작 안 함, --passes도 있어야해 (linux도 마찬가지)
         ```opt --load-pass-plugin LoopInfoPrinter.so --passes=loop-info-printer ../../exercise2/mm.bc -o ../../exercise6/mm.opt.bc```
-    - message result
+    
   
 ## results
 mm.opt.ll
