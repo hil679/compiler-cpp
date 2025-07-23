@@ -5,6 +5,7 @@
 ## Each Step Command
 1. frontend compilation \
     ```clang -O1 -c -emit-llvm (--sysroot=`xcrun --show-sdk-path`) test.c -o test.bc```
+    ```clang -O1 -c -emit-llvm mm.cpp -o mm.bc```
     - 아직 특정 운영체제나 CPU 아키텍처의 기계어 코드를 생성하지 않음. 
     - 최적화 전 LLVM IR 생성. \
 

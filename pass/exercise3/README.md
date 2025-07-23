@@ -171,37 +171,42 @@ opt -load-pass-plugin /path/to/MyPass.so -passes=hello-module input.bc -o output
 - const llvm::Function &F: 인자를 함수로 넘긴다
 
 ### How to Run LLVM Pass
-1. Compile LLVM Passes
+1. Compile LLVM Passes <br>
     ```$ clang++ -c -fpic -fno-rtti -stdlib=libc++ `llvm-config --cppflags` HelloModule.cpp -o HelloModule.o``` \
     Automatically generate compile options
-2. Make a shared library with the LLVM passes
+2. Make a shared library with the LLVM passes <br>
     ```$ clang++ -shared HelloModule.o -o HelloModule.so```
-3. Run the LLVM Passes using opt
+3. Run the LLVM Passes using opt <br>
     ```$ opt –load-pass-plugin HelloModule.so –passes=hello-module test.bc –o test.opt.bc```
 
 ## Each Step Command
-1) Open “lib/FunctionNamePrinter/FunctionNamePrinter.cpp”
-2) Print the names of function in the run function
-    ▪ To print a debug message with function name
-    ▪ ```#include “llvm/Support/Debug.h”```
-    ▪ ```dbgs() << "[FunctionNamePrinter] F.getName()\n";```
-3) Compile and test the pass
-    a. compile
-        ```clang++ -c -fpic -fno-rtti -stdlib=libc++ `llvm-config --cppflags` FunctionNamePrinter.cpp -o FunctionNamePrinter.o --sysroot=`xcrun --show-sdk-path```
-    b. Make a shared library with the LLVM passes
-        ~~~clang++ -shared FunctionNamePrinter.o -o FunctionNamePrinter.so \
-            --sysroot=$(xcrun --show-sdk-path) \
-            $(llvm-config --ldflags --libs) \
-            -lc++ -lc++abi -lunwind
-        ~~~
-    c. Run the LLVM Passes using opt
-        ```opt --load-pass-plugin FunctionNamePrinter.so --passes=function-name-printer ../../exercise1/test.bc -o ../../exercise3/test.opt.bc```
-        - result message
-        ~~~
-        [Plugin] Registering FunctionNamePrinter Pass
-        [FunctionNamePrinter] add
-        [FunctionNamePrinter] main
-        ~~~
+1) Open “lib/FunctionNamePrinter/FunctionNamePrinter.cpp” <br>
+2) Print the names of function in the run function <br>
+    ▪ To print a debug message with function name <br>
+    ▪ ```#include “llvm/Support/Debug.h”``` <br>
+    ▪ ```dbgs() << "[FunctionNamePrinter] F.getName()\n";``` <br>
+3) Compile and test the pass <br>
+    a. compile <br>
+        ```clang++ -c -fpic -fno-rtti -stdlib=libc++ `llvm-config --cppflags` FunctionNamePrinter.cpp -o FunctionNamePrinter.o --sysroot=`xcrun --show-sdk-path``` <br>
+   
+    b. Make a shared library with the LLVM passes <br>
+    
+            ~~~
+                clang++ -shared FunctionNamePrinter.o -o FunctionNamePrinter.so \
+                --sysroot=$(xcrun --show-sdk-path) \
+                $(llvm-config --ldflags --libs) \
+                -lc++ -lc++abi -lunwind
+            ~~~
+   
+    c. Run the LLVM Passes using opt <br>
+        ```opt --load-pass-plugin FunctionNamePrinter.so --passes=function-name-printer ../../exercise1/test.bc -o    ../../exercise3/test.opt.bc``` <br>
+        
+        - result message <br>
+            ~~~
+                [Plugin] Registering FunctionNamePrinter Pass
+                [FunctionNamePrinter] add
+                [FunctionNamePrinter] main
+            ~~~
 ## results
 ``` llvm-dis test.opt.bc ``` 
 - exercise3 와 exercise1의 C0는 다름, C0보다 최적화됨
