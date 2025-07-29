@@ -35,6 +35,9 @@ PreservedAnalyses MemoryProfilerPass::run(Module& M,
         // Type::getTypeSizeInBits(Type::getPrimitiveType(Context, Type::getTypeId())),
         // false
     );
+    FunctionCallee traceAllocStack = M.getOrInsertFunction("traceAllocStack", 
+        traceFuncTy
+    );
     FunctionCallee traceLoad = M.getOrInsertFunction("traceLoad", 
         traceFuncTy
         // PointerType::get(Type::getInt8Ty(Context), 0),
@@ -50,27 +53,49 @@ PreservedAnalyses MemoryProfilerPass::run(Module& M,
     for (Function& F : M) {
         for (BasicBlock& BB : F) {
              for (Instruction& I : BB) {
-                IRBuilder<> Builder(&I);
+                // IRBuilder<> Builder(&I);
+                if (CallInst* call = dyn_cast<CallInst>(&I)) {
+                    if (Function* calledFunc = call->getCalledFunction()) {
+                        if (calledFunc->getName() == "malloc") {
+                            IRBuilder<> MallocBuilder(call->getNextNonDebugInstruction());
+ 
+                            // malloc의 반환 값 (%1)과 할당 크기를 traceMalloc에 전달
+                            Value* allocatedPtr = MallocBuilder.CreatePointerCast(call, llvm::PointerType::get(Type::getInt8Ty(Context), 0));
+                            Value* allocatedSize = call->getArgOperand(0); // malloc의 첫 번째 인수가 크기
+                            MallocBuilder.CreateCall(traceMalloc, {allocatedPtr, allocatedSize});
+                        }
+                    }
+                }
                 if (AllocaInst* alloc = dyn_cast<AllocaInst>(&I)) {
+                    // AllocaInst는 항상 Entry Block의 시작 부분에 오고, 그 결과(%1)를 바로 사용합니다.
+                    // 따라서 AllocaInst 직후에 traceMalloc을 삽입하는 것이 안전합니다.
+                    // IRBuilder의 삽입 지점을 alloc의 다음 인스트럭션으로 설정합니다.
+                    // alloc->getNextNonDebugInstruction()을 사용하는 것이 가장 확실합니다.
+                    IRBuilder<> AllocaBuilder(alloc->getNextNonDebugInstruction());
                     // alloc.getArraysize()
                     TypeSize size = Layout.getTypeSizeInBits(alloc->getAllocatedType());
-                    Value* allocatedPtr = Builder.CreatePointerCast(alloc, llvm::PointerType::get(Type::getInt8Ty(Context), 0));
+                    Value* allocatedPtr = AllocaBuilder.CreatePointerCast(alloc, llvm::PointerType::get(Type::getInt8Ty(Context), 0));
                     Value* allocatedSize = ConstantInt::get(M.getDataLayout().getIntPtrType(Context), size);
-                    Builder.CreateCall(traceMalloc, {allocatedPtr, allocatedSize});
+                    AllocaBuilder.CreateCall(traceAllocStack, {allocatedPtr, allocatedSize});
                     // Builder.CreateCall(traceMalloc,{alloc->getAddressSpace(), size},"traceMalloc");
                 }
                 if (LoadInst* load = dyn_cast<LoadInst>(&I)) {
+                    IRBuilder<> LoadBuilder(load->getNextNonDebugInstruction());
+
                     TypeSize size = Layout.getTypeSizeInBits(load->getPointerOperandType());
-                    Value* loadedPtr = Builder.CreatePointerCast(load->getPointerOperand(), llvm::PointerType::get(Type::getInt8Ty(Context), 0));
+                    Value* loadedPtr = LoadBuilder.CreatePointerCast(load->getPointerOperand(), llvm::PointerType::get(Type::getInt8Ty(Context), 0));
                     Value* loadedSize = ConstantInt::get(M.getDataLayout().getIntPtrType(Context), M.getDataLayout().getTypeAllocSizeInBits(load->getPointerOperandType()) / 8); // 바이트 단위로 size 전달
-                    Builder.CreateCall(traceLoad, {loadedPtr, loadedSize});
+                    LoadBuilder.CreateCall(traceLoad, {loadedPtr, loadedSize});
                     // Builder.CreateCall(traceLoad,{load->getPointerAddressSpace(), size},"traceLoad");
                 }
                 if (StoreInst* store = dyn_cast<StoreInst>(&I)) {
+                    // StoreInst 바로 다음에 traceStore를 삽입합니다.
+                    IRBuilder<> StoreBuilder(store->getNextNonDebugInstruction());
+
                     TypeSize size = Layout.getTypeSizeInBits(store->getPointerOperandType());
-                    Value* storedPtr = Builder.CreatePointerCast(store->getPointerOperand(), llvm::PointerType::get(Type::getInt8Ty(Context), 0));
+                    Value* storedPtr = StoreBuilder.CreatePointerCast(store->getPointerOperand(), llvm::PointerType::get(Type::getInt8Ty(Context), 0));
                     Value* storedSize = ConstantInt::get(M.getDataLayout().getIntPtrType(Context), M.getDataLayout().getTypeAllocSizeInBits(store->getPointerOperandType()) / 8); // 바이트 단위로 size 전달
-                    Builder.CreateCall(traceStore, {storedPtr, storedSize});
+                    StoreBuilder.CreateCall(traceStore, {storedPtr, storedSize});
                     // Builder.CreateCall(traceStore,{store->getPointerAddressSpace(), size},"traceStore");
                 }
              }
@@ -83,7 +108,7 @@ PreservedAnalyses MemoryProfilerPass::run(Module& M,
 extern "C" PassPluginLibraryInfo llvmGetPassPluginInfo() {
     return {
         LLVM_PLUGIN_API_VERSION,
-        "MomoryProfilerPassPlugin",
+        "MemoryProfilerPassPlugin",
         LLVM_VERSION_STRING,
         [](PassBuilder &PB) {
             dbgs() << "[DEBUG] Registering MemoryProfiler Pass";
