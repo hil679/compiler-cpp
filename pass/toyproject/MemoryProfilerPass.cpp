@@ -20,8 +20,8 @@ PreservedAnalyses MemoryProfilerPass::run(Module& M,
     
     LLVMContext& Context = M.getContext();
     const DataLayout &Layout = M.getDataLayout();
-    SmallVector<Type*, 2> ArgTys;
-    ArgTys.push_back(llvm::PointerType::get(Type::getInt8Ty(Context), 0)); // void* (load 주소)
+    std::vector<Type*> ArgTys;
+    ArgTys.push_back(llvm::PointerType::get(Type::getInt8Ty(Context), 0));
     ArgTys.push_back(M.getDataLayout().getIntPtrType(Context));         // size_t (load 크기)
     FunctionType* traceFuncTy = FunctionType::get(
         Type::getVoidTy(Context), ArgTys, /*isVarArg=*/false);
@@ -40,15 +40,9 @@ PreservedAnalyses MemoryProfilerPass::run(Module& M,
     );
     FunctionCallee traceLoad = M.getOrInsertFunction("traceLoad", 
         traceFuncTy
-        // PointerType::get(Type::getInt8Ty(Context), 0),
-        // M.getDataLayout().getIntPtrType(Context),
-        // false
     );
     FunctionCallee traceStore = M.getOrInsertFunction("traceStore", 
         traceFuncTy
-        // PointerType::get(Type::getInt8Ty(Context), 0),
-        // M.getDataLayout().getIntPtrType(Context),
-        // false
     );
     for (Function& F : M) {
         for (BasicBlock& BB : F) {
@@ -75,34 +69,30 @@ PreservedAnalyses MemoryProfilerPass::run(Module& M,
                     // alloc.getArraysize()
                     TypeSize size = Layout.getTypeSizeInBits(alloc->getAllocatedType());
                     Value* allocatedPtr = AllocaBuilder.CreatePointerCast(alloc, llvm::PointerType::get(Type::getInt8Ty(Context), 0));
-                    Value* allocatedSize = ConstantInt::get(M.getDataLayout().getIntPtrType(Context), size);
+                    Value* allocatedSize = ConstantInt::get(M.getDataLayout().getIntPtrType(Context), size/8);
                     AllocaBuilder.CreateCall(traceAllocStack, {allocatedPtr, allocatedSize});
-                    // Builder.CreateCall(traceMalloc,{alloc->getAddressSpace(), size},"traceMalloc");
                 }
                 if (LoadInst* load = dyn_cast<LoadInst>(&I)) {
-                    IRBuilder<> LoadBuilder(load->getNextNonDebugInstruction());
+                    IRBuilder<> LoadBuilder(load);
 
                     TypeSize size = Layout.getTypeSizeInBits(load->getPointerOperandType());
                     Value* loadedPtr = LoadBuilder.CreatePointerCast(load->getPointerOperand(), llvm::PointerType::get(Type::getInt8Ty(Context), 0));
-                    Value* loadedSize = ConstantInt::get(M.getDataLayout().getIntPtrType(Context), M.getDataLayout().getTypeAllocSizeInBits(load->getPointerOperandType()) / 8); // 바이트 단위로 size 전달
+                    Value* loadedSize = ConstantInt::get(M.getDataLayout().getIntPtrType(Context), size/8); // 바이트 단위로 size 전달
                     LoadBuilder.CreateCall(traceLoad, {loadedPtr, loadedSize});
-                    // Builder.CreateCall(traceLoad,{load->getPointerAddressSpace(), size},"traceLoad");
                 }
                 if (StoreInst* store = dyn_cast<StoreInst>(&I)) {
-                    // StoreInst 바로 다음에 traceStore를 삽입합니다.
-                    IRBuilder<> StoreBuilder(store->getNextNonDebugInstruction());
+                    IRBuilder<> StoreBuilder(store);
 
                     TypeSize size = Layout.getTypeSizeInBits(store->getPointerOperandType());
                     Value* storedPtr = StoreBuilder.CreatePointerCast(store->getPointerOperand(), llvm::PointerType::get(Type::getInt8Ty(Context), 0));
-                    Value* storedSize = ConstantInt::get(M.getDataLayout().getIntPtrType(Context), M.getDataLayout().getTypeAllocSizeInBits(store->getPointerOperandType()) / 8); // 바이트 단위로 size 전달
+                    Value* storedSize = ConstantInt::get(M.getDataLayout().getIntPtrType(Context), size/8); // 바이트 단위로 size 전달
                     StoreBuilder.CreateCall(traceStore, {storedPtr, storedSize});
-                    // Builder.CreateCall(traceStore,{store->getPointerAddressSpace(), size},"traceStore");
                 }
              }
         }
     }
    
-    return PreservedAnalyses::all();
+    return PreservedAnalyses::none();
 }
 
 extern "C" PassPluginLibraryInfo llvmGetPassPluginInfo() {
