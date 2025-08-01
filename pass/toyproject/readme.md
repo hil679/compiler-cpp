@@ -204,7 +204,7 @@ CallInst *CreateCall(FunctionCallee Callee,
   [Store] Addr: 0xfffff1accc7c Size: 8 -> ???
 
   [Memory Allocation(Heap)] Addr: 0xaaab0e7842c0 Size: 8 -> mat malloc시
-
+  &mat[0] = mat -> heap 
   [Store] Addr: 0xfffff1accc70 Size: 8 
   [Store] Addr: 0xfffff1accc6c Size: -> int i = 0 
   [Load] Addr: 0xfffff1accc6c Size: 8 -> i < malloc_size에서 i 사용
@@ -331,17 +331,21 @@ CallInst *CreateCall(FunctionCallee Callee,
       store i32 0, ptr %1, align 4
       call void @traceStore(ptr %1, i64 8)
 
-    ~~~
-    - "%1사용 부분" -> 0만 저장하고 하는 거 안 보임 -> return 부분인가??
+    ~~~듯
+    - "%1사용 부분" -> 0만 저장하고 하는 거 안 보임 -> assembly code봐야함
    
   2. 
     ~~~
-      [Memory Allocation(Stack)] Addr: 0xfffff1accc7c Size: 4 -> ???
+      [Memory Allocation(Stack)] Addr: 0xfffff1accc7c Size: 4 -> assembly봐야할 
       [Memory Allocation(Stack)] Addr: 0xfffff1accc70 Size: 8 -> mat
     ~~~
     - 12byte나 차지한 이유
-  3. mat이 heap, stack에 모두 저장되는 이유..? 
-  4.  You need to cast i32* to i8* for load and store -> why? \
-      - FunctionType에서 int8*로 선언해놔서?? \ 
+  3. mat이 heap, stack에 모두 저장되는 이유
+    - local variable인 mat을 stack에 저장
+    - mat에 저장할 값을 위한 공간이 heap에 생성
+  4.  You need to cast i32* to i8* for load and store 
+      - FunctionType에서 int8*로 선언해놔서 
       ```Value* loadedPtr = LoadBuilder.CreatePointerCast(load->getPointerOperand(), llvm::PointerType::get(Type::getInt8Ty(Context), 0));```
-  5. TypeSize가 어떻게 APINT자리에??
+  5. TypeSize가 uint64_t로 내부적 변환 일어나
+      - constexpr -> return이 아니라 특성
+
